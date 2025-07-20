@@ -91,13 +91,12 @@ const resolvers = {
     },
     bookCount: async () => Book.countDocuments(),
     authorCount: async () => Author.countDocuments(),
-    me: (root, args, context) => {
-      return context.currentUser;
+    me: (root, args, {currentUser}) => {
+      return currentUser;
     },
   },
   Mutation: {
-    addBook: async (root, args, context) => {
-      const currentUser = context.currentUser;
+    addBook: async (root, args, {currentUser}) => {
       if (!currentUser) {
         throw new GraphQLError('Not authenticated', {
           extensions: { code: 'UNAUTHENTICATED' }
@@ -131,8 +130,7 @@ const resolvers = {
         });
       }
     },
-    editAuthor: async (root, args, context) => {
-      const currentUser = context.currentUser;
+    editAuthor: async (root, args, {currentUser}) => {
       if (!currentUser) {
         throw new GraphQLError('Not authenticated', {
           extensions: { code: 'UNAUTHENTICATED' }
