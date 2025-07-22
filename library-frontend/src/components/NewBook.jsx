@@ -6,9 +6,13 @@ const CREATE_BOOK = gql`
   mutation createBook($title: String!, $author: String!, $published: Int!, $genres: [String!]!) {
     addBook(title: $title, author: $author, published: $published, genres: $genres) {
       title
-      author
+      author {
+        name
+        id
+      }
       published
       genres
+      id
     }
   }
 `;
@@ -17,9 +21,13 @@ const ALL_BOOKS = gql`
   query {
     allBooks {
       title
-      author
+      author {
+        name
+        id
+      }
       published
       genres
+      id
     }
   }
 `;
@@ -41,6 +49,9 @@ const NewBook = () => {
       { query: ALL_BOOKS },
       { query: ALL_AUTHORS }
     ],
+    update: (cache) => {
+      cache.evict({ fieldName: "allBooks" });
+    }
   });
   const [title, setTitle] = useState('')
   const [author, setAuthor] = useState('')

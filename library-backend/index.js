@@ -82,7 +82,7 @@ const resolvers = {
         filter.author = author._id;
       }
       if (args.genre) {
-        filter.genres = { $in: [args.genre] };
+        filter.genres = { $in: [new RegExp(`^${args.genre}$`, 'i')] };
       }
       return Book.find(filter).populate('author');
     },
