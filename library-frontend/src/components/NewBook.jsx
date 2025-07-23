@@ -17,38 +17,9 @@ const CREATE_BOOK = gql`
   }
 `;
 
-const ALL_BOOKS = gql`
-  query {
-    allBooks {
-      title
-      author {
-        name
-        id
-      }
-      published
-      genres
-      id
-    }
-  }
-`;
-
-const ALL_AUTHORS = gql`
-  query {
-    allAuthors {
-      name
-      born
-      bookCount
-    }
-  }
-`;
-
 const NewBook = () => {
 
   const [createBook] = useMutation(CREATE_BOOK, {
-    refetchQueries: [
-      { query: ALL_BOOKS },
-      { query: ALL_AUTHORS }
-    ],
     update: (cache) => {
       cache.evict({ fieldName: "allBooks" });
     }

@@ -34,6 +34,14 @@ const Authors = () => {
     return <div>loading...</div>;
   }
 
+  if (result.error) {
+    return <div>Error loading authors: {result.error.message}</div>;
+  }
+
+  if (!result.data || !result.data.allAuthors) {
+    return <div>No authors data available</div>;
+  }
+
   const authors = result.data.allAuthors;
 
   const submit = async (event) => {

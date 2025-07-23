@@ -1,5 +1,5 @@
 import { gql } from '@apollo/client'
-import { useQuery } from '@apollo/client'
+import { useQuery, useSubscription } from '@apollo/client'
 import { useState, useMemo } from 'react'
 
 const ALL_BOOKS_QUERY = gql`
@@ -19,6 +19,20 @@ const ALL_BOOKS_QUERY = gql`
 const BOOKS_BY_GENRE_QUERY = gql`
   query GetBooksByGenre($genre: String) {
     allBooks(genre: $genre) {
+      title
+      author {
+        name
+      }
+      published
+      genres
+      id
+    }
+  }
+`;
+
+const BOOK_ADDED = gql`
+  subscription {
+    bookAdded {
       title
       author {
         name
@@ -51,17 +65,71 @@ const Books = () => {
     skip: selectedGenre === null
   });
   
+  // Subscribe to book additions
+  useSubscription(BOOK_ADDED, {
+    onData: ({ data, client }) => {
+      console.log('Subscription triggered!', data);
+      const addedBook = data.data.bookAdded;
+      
+      // Show notification
+      window.alert(`New book added: ${addedBook.title} by ${addedBook.author.name}`);
+      console.log('New book added:', addedBook);
+      
+      // Update the cache for ALL_BOOKS_QUERY
+      const existingData = client.readQuery({ query: ALL_BOOKS_QUERY });
+      if (existingData) {
+        client.writeQuery({
+          query: ALL_BOOKS_QUERY,
+          data: {
+            allBooks: [...existingData.allBooks, addedBook]
+          }
+        });
+      }
+      
+      // If we have a selected genre, update that query too if the book matches (case-insensitive)
+      if (selectedGenre && addedBook.genres.some(genre => 
+        genre.toLowerCase() === selectedGenre.toLowerCase()
+      )) {
+        const existingFilteredData = client.readQuery({ 
+          query: BOOKS_BY_GENRE_QUERY, 
+          variables: { genre: selectedGenre } 
+        });
+        if (existingFilteredData) {
+          client.writeQuery({
+            query: BOOKS_BY_GENRE_QUERY,
+            variables: { genre: selectedGenre },
+            data: {
+              allBooks: [...existingFilteredData.allBooks, addedBook]
+            }
+          });
+        }
+      }
+    },
+    onError: (error) => {
+      console.error('Subscription error:', error);
+    },
+    onComplete: () => {
+      console.log('Subscription completed');
+    },
+  });
+  
   // Use filtered data if available, otherwise use all books data
   const displayData = selectedGenre ? filteredData : allBooksData;
   
-  // Get all unique genres from all books
+  // Get all unique genres from all books (case-insensitive deduplication, display in lowercase)
   const allGenres = useMemo(() => {
     if (!allBooksData?.allBooks) return [];
     const genres = new Set();
     allBooksData.allBooks.forEach(book => {
-      book.genres.forEach(genre => genres.add(genre.toLowerCase()));
+      book.genres.forEach(genre => {
+        const cleanGenre = genre.toLowerCase().trim(); // Trim whitespace and convert to lowercase
+        if (cleanGenre) { // Only add non-empty genres
+          genres.add(cleanGenre);
+        }
+      });
     });
-    return Array.from(genres).sort();
+    const result = Array.from(genres).sort();
+    return result;
   }, [allBooksData]);
 
   if (loading) return <div>Loading...</div>;
